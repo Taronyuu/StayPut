@@ -1,0 +1,10 @@
+name: StayPut
+version: 0.1
+author: Zander van der Meer
+main: nl.zandervdm.stayput.Main
+website: http://zandervdm.nl
+commands:
+    stayput:
+        description: Main command
+        usage: /stayput <command>
+        aliases: [stay, sp]
