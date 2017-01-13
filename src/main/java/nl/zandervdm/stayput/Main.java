@@ -10,8 +10,8 @@ import nl.zandervdm.stayput.Models.Position;
 import nl.zandervdm.stayput.Utils.ConfigManager;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.javalite.activejdbc.Base;
 
+import java.io.File;
 import java.sql.SQLException;
 
 public class Main extends JavaPlugin {
@@ -41,7 +41,6 @@ public class Main extends JavaPlugin {
 
     @Override
     public void onDisable(){
-        Base.close();
     }
 
     public Dao<Position, Integer> getPositionMapper(){
@@ -64,17 +63,35 @@ public class Main extends JavaPlugin {
     }
 
     protected void setupDatabase(){
-        String host        = Main.config.getString("mysql.host");
-        Integer port       = Main.config.getInt("mysql.port");
-        String database    = Main.config.getString("mysql.database");
-        String username    = Main.config.getString("mysql.username");
-        String password    = Main.config.getString("mysql.password");
-        String datasource  = "jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true";
-        connectionSource   = null;
-        try {
-            connectionSource = new JdbcConnectionSource(datasource, username, password);
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if(Main.config.getString("type").equals("sqlite")){
+            try {
+                Class.forName("org.sqlite.JDBC");
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+            File file = new File(this.getDataFolder(), "database.db");
+            String datasource = "jdbc:sqlite:" + file;
+            connectionSource = null;
+            try {
+                connectionSource = new JdbcConnectionSource(datasource);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }else if(Main.config.getString("type").equals("mysql")) {
+            String host = Main.config.getString("mysql.host");
+            Integer port = Main.config.getInt("mysql.port");
+            String database = Main.config.getString("mysql.database");
+            String username = Main.config.getString("mysql.username");
+            String password = Main.config.getString("mysql.password");
+            String datasource = "jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true";
+            connectionSource = null;
+            try {
+                connectionSource = new JdbcConnectionSource(datasource, username, password);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }else{
+            getLogger().warning("Invalid database connection type chosen!");
         }
         if(Main.config.getBoolean("debug")) getLogger().info("Setting up database");
     }

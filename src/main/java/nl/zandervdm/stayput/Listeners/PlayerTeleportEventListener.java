@@ -1,5 +1,6 @@
 package nl.zandervdm.stayput.Listeners;
 
+import com.onarandombox.MultiverseCore.event.MVTeleportEvent;
 import javafx.geometry.Pos;
 import nl.zandervdm.stayput.Main;
 import nl.zandervdm.stayput.Models.Position;
@@ -21,12 +22,17 @@ public class PlayerTeleportEventListener implements Listener {
     }
 
     @EventHandler
-    public void onPlayerTeleportEvent(PlayerTeleportEvent event){
+    public void onPlayerTeleportEvent(MVTeleportEvent event){
         if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("PlayerTeleportEvent activated");
-        Player player = event.getPlayer();
+        Player player = event.getTeleportee();
         World fromWorld = event.getFrom().getWorld();
-        World toWorld = event.getTo().getWorld();
-        PlayerTeleportEvent.TeleportCause cause = event.getCause();
+        World toWorld = event.getDestination().getLocation(player).getWorld();
+//        PlayerTeleportEvent.TeleportCause cause = event.getCause();
+
+        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting: " + player.getName());
+        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting from world: " + fromWorld.getName());
+        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting to world: " + toWorld.getName());
+//        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting cause: " + cause.name());
 
         //If the worlds are the same, ignore
         if(fromWorld.getName().equals(toWorld.getName())){
@@ -51,10 +57,10 @@ public class PlayerTeleportEventListener implements Listener {
         this.updateLocationForPlayer(player, event.getFrom());
 
         //Only teleport the player if he is using a command or if it is a plugin
-        if(!this.shouldTeleport(cause)){
-            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleporting player because he is teleported by something else than a command");
-            return;
-        }
+//        if(!this.shouldTeleport(cause)){
+//            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleporting player because he is teleported by something else than a command");
+//            return;
+//        }
 
         //In any other case, find the previous spot of the user in this world
         Location previousLocation = this.getPreviousLocation(player, toWorld);
@@ -67,6 +73,7 @@ public class PlayerTeleportEventListener implements Listener {
 
         //There is a location, and the player should teleport, so teleport him
         if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Teleporting player to his previous location");
+        event.setCancelled(true);
         player.teleport(previousLocation);
     }
 
@@ -95,9 +102,9 @@ public class PlayerTeleportEventListener implements Listener {
         position.setWorld_name(location.getWorld().getName());
         position.setPlayer_name(player.getName());
         position.setUuid(player.getUniqueId().toString());
-        position.setCoordinate_x(location.getX());
-        position.setCoordinate_y(location.getY());
-        position.setCoordinate_z(location.getZ());
+        position.setCoordinate_x(location.getX() * 1.0);
+        position.setCoordinate_y(location.getY() * 1.0);
+        position.setCoordinate_z(location.getZ() * 1.0);
         position.setYaw(location.getYaw());
         position.setPitch(location.getPitch());
         try {
@@ -123,7 +130,7 @@ public class PlayerTeleportEventListener implements Listener {
         if(position == null) return null;
         double coordX = position.getCoordinate_x();
         double coordY = position.getCoordinate_y();
-        double coordZ = position.getCoordinate_y();
+        double coordZ = position.getCoordinate_z();
         float yaw = position.getYaw();
         float pitch = position.getPitch();
 

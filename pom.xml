@@ -13,6 +13,10 @@
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
+        <repository>
+            <id>Multiverse-Core</id>
+            <url>http://repo.onarandombox.com/content/repositories/multiverse/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -22,15 +26,10 @@
             <version>1.11.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.javalite</groupId>
-            <artifactId>activejdbc</artifactId>
-            <version>1.4.13</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/com.j256.ormlite/ormlite-android -->
         <dependency>
             <groupId>com.j256.ormlite</groupId>
-            <artifactId>ormlite-android</artifactId>
+            <artifactId>ormlite-core</artifactId>
             <version>5.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.j256.ormlite/ormlite-jdbc -->
@@ -38,6 +37,11 @@
             <groupId>com.j256.ormlite</groupId>
             <artifactId>ormlite-jdbc</artifactId>
             <version>5.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.onarandombox.multiversecore</groupId>
+            <artifactId>Multiverse-Core</artifactId>
+            <version>2.5</version>
         </dependency>
     </dependencies>
 </project>
