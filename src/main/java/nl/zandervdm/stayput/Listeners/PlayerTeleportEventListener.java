@@ -46,11 +46,11 @@ public class PlayerTeleportEventListener implements Listener {
                 return;
         }
 
-        //However if the player has the override permission, also ignore
-        if(player.hasPermission("stayput.override")){
-            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Ignore player " + player.getName() + " because he has the override permission");
-                return;
-        }
+//        //However if the player has the override permission, also ignore
+//        if(player.hasPermission("stayput.override") && !player.hasPermission("-stayput.override")){
+//            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Ignore player " + player.getName() + " because he has the override permission");
+//                return;
+//        }
 
         //We should always update the previous location for the previous world for this player because at this point
         //he left the previous world
