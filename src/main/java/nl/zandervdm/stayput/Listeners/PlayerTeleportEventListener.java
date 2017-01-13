@@ -1,5 +1,6 @@
 package nl.zandervdm.stayput.Listeners;
 
+import javafx.geometry.Pos;
 import nl.zandervdm.stayput.Main;
 import nl.zandervdm.stayput.Models.Position;
 import org.bukkit.Location;
@@ -8,6 +9,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
+
+import java.sql.SQLException;
 
 public class PlayerTeleportEventListener implements Listener {
 
@@ -24,6 +27,12 @@ public class PlayerTeleportEventListener implements Listener {
         World fromWorld = event.getFrom().getWorld();
         World toWorld = event.getTo().getWorld();
         PlayerTeleportEvent.TeleportCause cause = event.getCause();
+
+        //If the worlds are the same, ignore
+        if(fromWorld.getName().equals(toWorld.getName())){
+            if(Main.config.getBoolean("debug"))  this.plugin.getLogger().info("Ignoring player " + player.getName() + " because he did not switch worlds");
+            return;
+        }
 
         //If the player does not have the use permission, just ignore it and do nothing
         if(!player.hasPermission("stayput.use")){
@@ -43,7 +52,7 @@ public class PlayerTeleportEventListener implements Listener {
 
         //Only teleport the player if he is using a command or if it is a plugin
         if(!this.shouldTeleport(cause)){
-            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleporting player because he is teleported by something else than a plugin or command");
+            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleporting player because he is teleported by something else than a command");
             return;
         }
 
@@ -67,31 +76,58 @@ public class PlayerTeleportEventListener implements Listener {
     }
 
     protected void updateLocationForPlayer(Player player, Location location){
-        Position position = Position.findFirst("uuid = ? AND world_name = ?", player.getUniqueId().toString(), location.getWorld().getName());
+        Position position = null;
+        try {
+             position = this.plugin.getPositionMapper()
+                     .queryBuilder()
+                     .where()
+                     .eq("uuid", player.getUniqueId().toString())
+                     .and()
+                     .eq("world_name", location.getWorld().getName())
+                     .queryForFirst();
+        } catch (SQLException e) {
+            //
+        }
+
         if(position == null) {
             position = new Position();
         }
-        position.set("player_name", player.getName());
-        position.set("uuid", player.getUniqueId().toString());
-        position.set("coordinate_x", location.getBlockX());
-        position.set("coordinate_y", location.getBlockY());
-        position.set("coordinate_z", location.getBlockZ());
-        position.set("yaw", location.getYaw());
-        position.set("pitch", location.getPitch());
-        position.saveIt();
+        position.setWorld_name(location.getWorld().getName());
+        position.setPlayer_name(player.getName());
+        position.setUuid(player.getUniqueId().toString());
+        position.setCoordinate_x(location.getX());
+        position.setCoordinate_y(location.getY());
+        position.setCoordinate_z(location.getZ());
+        position.setYaw(location.getYaw());
+        position.setPitch(location.getPitch());
+        try {
+            this.plugin.getPositionMapper().createOrUpdate(position);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     protected Location getPreviousLocation(Player player, World world){
-        Position position = Position.findFirst("uuid = ? AND world_name = ?", player.getUniqueId().toString(), world.getName());
+        Position position = null;
+        try {
+            position = this.plugin.getPositionMapper()
+                    .queryBuilder()
+                    .where()
+                    .eq("uuid", player.getUniqueId().toString())
+                    .and()
+                    .eq("world_name", world.getName())
+                    .queryForFirst();
+        } catch (SQLException e) {
+            return null;
+        }
         if(position == null) return null;
-        double coordX = position.getDouble("coordinate_x");
-        double coordY = position.getDouble("coordinate_y");
-        double coordZ = position.getDouble("coordinate_z");
-        float yaw = position.getFloat("yaw");
-        float pitch = position.getFloat("pitch");
+        double coordX = position.getCoordinate_x();
+        double coordY = position.getCoordinate_y();
+        double coordZ = position.getCoordinate_y();
+        float yaw = position.getYaw();
+        float pitch = position.getPitch();
 
-        Location location = new Location(world, coordX, coordY, coordZ, yaw, pitch);
-        return location;
+        return new Location(world, coordX, coordY, coordZ, yaw, pitch);
     }
 
 }

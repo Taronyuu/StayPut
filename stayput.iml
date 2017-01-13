@@ -28,5 +28,8 @@
     <orderEntry type="library" name="Maven: org.codehaus.jackson:jackson-core-asl:1.9.13" level="project" />
     <orderEntry type="library" name="Maven: org.codehaus.jackson:jackson-mapper-asl:1.9.13" level="project" />
     <orderEntry type="library" name="Maven: org.javalite:app-config:1.4.13" level="project" />
+    <orderEntry type="library" name="Maven: com.j256.ormlite:ormlite-android:5.0" level="project" />
+    <orderEntry type="library" name="Maven: com.j256.ormlite:ormlite-core:5.0" level="project" />
+    <orderEntry type="library" name="Maven: com.j256.ormlite:ormlite-jdbc:5.0" level="project" />
   </component>
 </module>

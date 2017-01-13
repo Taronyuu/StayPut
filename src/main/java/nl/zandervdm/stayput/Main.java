@@ -1,6 +1,12 @@
 package nl.zandervdm.stayput;
 
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.support.ConnectionSource;
+import com.j256.ormlite.table.TableUtils;
 import nl.zandervdm.stayput.Listeners.PlayerTeleportEventListener;
+import nl.zandervdm.stayput.Models.Position;
 import nl.zandervdm.stayput.Utils.ConfigManager;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,6 +19,9 @@ public class Main extends JavaPlugin {
     public static FileConfiguration config;
 
     protected ConfigManager configManager;
+    protected ConnectionSource connectionSource;
+
+    protected Dao<Position, Integer> positionMapper;
 
     /**
      * Permissions:
@@ -26,12 +35,17 @@ public class Main extends JavaPlugin {
         setupConfig();
         setupListeners();
         setupDatabase();
+        setupDao();
         setupTables();
     }
 
     @Override
     public void onDisable(){
         Base.close();
+    }
+
+    public Dao<Position, Integer> getPositionMapper(){
+        return this.positionMapper;
     }
 
     protected void setupClasses(){
@@ -55,26 +69,28 @@ public class Main extends JavaPlugin {
         String database    = Main.config.getString("mysql.database");
         String username    = Main.config.getString("mysql.username");
         String password    = Main.config.getString("mysql.password");
-        String datasource  = "jdbc:mysql://" + host + ":" + port + "/" + database;
-        Base.open("com.mysql.jdbc.Driver", datasource, username, password);
+        String datasource  = "jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true";
+        connectionSource   = null;
+        try {
+            connectionSource = new JdbcConnectionSource(datasource, username, password);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         if(Main.config.getBoolean("debug")) getLogger().info("Setting up database");
     }
 
-    protected void setupTables() {
-        String createPositionsTable = "CREATE TABLE IF NOT EXISTS `positions` (" +
-                "  `id` int(11) unsigned NOT NULL AUTO_INCREMENT," +
-                "  `player_name` varchar(255) DEFAULT NULL," +
-                "  `uuid` varchar(255) DEFAULT NULL," +
-                "  `world_name` varchar(255) DEFAULT NULL," +
-                "  `coordinate_x` double DEFAULT NULL," +
-                "  `coordinate_y` double DEFAULT NULL," +
-                "  `coordinate_z` double DEFAULT NULL," +
-                "  `yaw` float DEFAULT NULL," +
-                "  `pitch` float DEFAULT NULL," +
-                "  PRIMARY KEY (`id`)" +
-                ") ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+    protected void setupDao(){
+        positionMapper = null;
         try {
-            Base.connection().nativeSQL(createPositionsTable);
+            positionMapper = DaoManager.createDao(connectionSource, Position.class);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void setupTables() {
+        try {
+            TableUtils.createTableIfNotExists(connectionSource, Position.class);
         } catch (SQLException e) {
             e.printStackTrace();
         }
