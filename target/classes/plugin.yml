@@ -3,6 +3,7 @@ version: 0.02
 author: Zander van der Meer
 main: nl.zandervdm.stayput.Main
 website: http://zandervdm.nl
+depend: [Multiverse-Core]
 commands:
     stayput:
         description: Main command

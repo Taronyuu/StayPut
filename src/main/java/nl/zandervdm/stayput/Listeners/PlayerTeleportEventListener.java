@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.sql.SQLException;
+import java.util.List;
 
 public class PlayerTeleportEventListener implements Listener {
 
@@ -62,6 +63,12 @@ public class PlayerTeleportEventListener implements Listener {
 //            return;
 //        }
 
+        //If this world is inside the configs blacklist, ignore
+        if(this.worldIsBlacklisted(toWorld)){
+            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleport player because this world is blacklisted");
+            return;
+        }
+
         //In any other case, find the previous spot of the user in this world
         Location previousLocation = this.getPreviousLocation(player, toWorld);
 
@@ -80,6 +87,12 @@ public class PlayerTeleportEventListener implements Listener {
     protected boolean shouldTeleport(PlayerTeleportEvent.TeleportCause cause){
         return cause.name().equals(PlayerTeleportEvent.TeleportCause.COMMAND.name())
                 || cause.name().equals(PlayerTeleportEvent.TeleportCause.PLUGIN.name());
+    }
+
+    protected boolean worldIsBlacklisted(World world){
+        List<String> blacklistedWorlds = Main.config.getStringList("blacklisted-worlds");
+        if(blacklistedWorlds.size() == 0) return false;
+        return blacklistedWorlds.contains(world.getName());
     }
 
     protected void updateLocationForPlayer(Player player, Location location){
