@@ -28,126 +28,23 @@ public class PlayerTeleportEventListener implements Listener {
         Player player = event.getTeleportee();
         World fromWorld = event.getFrom().getWorld();
         World toWorld = event.getDestination().getLocation(player).getWorld();
-//        PlayerTeleportEvent.TeleportCause cause = event.getCause();
 
-        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting: " + player.getName());
-        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting from world: " + fromWorld.getName());
-        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting to world: " + toWorld.getName());
-//        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Player teleporting cause: " + cause.name());
-
-        //If the worlds are the same, ignore
-        if(fromWorld.getName().equals(toWorld.getName())){
-            if(Main.config.getBoolean("debug"))  this.plugin.getLogger().info("Ignoring player " + player.getName() + " because he did not switch worlds");
+        if(!this.plugin.getRuleManager().shouldUpdateLocation(player, event.getFrom(), event.getDestination().getLocation(player))){
             return;
         }
-
-        //If the player does not have the use permission, just ignore it and do nothing
-        if(!player.hasPermission("stayput.use")){
-            if(Main.config.getBoolean("debug"))  this.plugin.getLogger().info("Ignoring player " + player.getName() + " because he does not have permission");
-                return;
-        }
-
-//        //However if the player has the override permission, also ignore
-//        if(player.hasPermission("stayput.override") && !player.hasPermission("-stayput.override")){
-//            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Ignore player " + player.getName() + " because he has the override permission");
-//                return;
-//        }
 
         //We should always update the previous location for the previous world for this player because at this point
         //he left the previous world
-        this.updateLocationForPlayer(player, event.getFrom());
+        this.plugin.getPositionRepository().updateLocationForPlayer(player, event.getFrom());
 
-        //Only teleport the player if he is using a command or if it is a plugin
-//        if(!this.shouldTeleport(cause)){
-//            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleporting player because he is teleported by something else than a command");
-//            return;
-//        }
+        Location previousLocation = this.plugin.getRuleManager().shouldTeleportPlayer(player, event.getFrom(), event.getDestination().getLocation(player));
 
-        //If this world is inside the configs blacklist, ignore
-        if(this.worldIsBlacklisted(toWorld)){
-            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleport player because this world is blacklisted");
-            return;
-        }
-
-        //In any other case, find the previous spot of the user in this world
-        Location previousLocation = this.getPreviousLocation(player, toWorld);
-
-        //If there is no previous location for this world, just ignore it
-        if(previousLocation == null){
-            if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Not teleporting player because there is no previous location found");
-            return;
-        }
-
-        //There is a location, and the player should teleport, so teleport him
-        if(Main.config.getBoolean("debug")) this.plugin.getLogger().info("Teleporting player to his previous location");
-        event.setCancelled(true);
-        player.teleport(previousLocation);
-    }
-
-    protected boolean shouldTeleport(PlayerTeleportEvent.TeleportCause cause){
-        return cause.name().equals(PlayerTeleportEvent.TeleportCause.COMMAND.name())
-                || cause.name().equals(PlayerTeleportEvent.TeleportCause.PLUGIN.name());
-    }
-
-    protected boolean worldIsBlacklisted(World world){
-        List<String> blacklistedWorlds = Main.config.getStringList("blacklisted-worlds");
-        if(blacklistedWorlds.size() == 0) return false;
-        return blacklistedWorlds.contains(world.getName());
-    }
-
-    protected void updateLocationForPlayer(Player player, Location location){
-        Position position = null;
-        try {
-             position = this.plugin.getPositionMapper()
-                     .queryBuilder()
-                     .where()
-                     .eq("uuid", player.getUniqueId().toString())
-                     .and()
-                     .eq("world_name", location.getWorld().getName())
-                     .queryForFirst();
-        } catch (SQLException e) {
-            //
-        }
-
-        if(position == null) {
-            position = new Position();
-        }
-        position.setWorld_name(location.getWorld().getName());
-        position.setPlayer_name(player.getName());
-        position.setUuid(player.getUniqueId().toString());
-        position.setCoordinate_x(location.getX() * 1.0);
-        position.setCoordinate_y(location.getY() * 1.0);
-        position.setCoordinate_z(location.getZ() * 1.0);
-        position.setYaw(location.getYaw());
-        position.setPitch(location.getPitch());
-        try {
-            this.plugin.getPositionMapper().createOrUpdate(position);
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if(previousLocation != null) {
+            //There is a location, and the player should teleport, so teleport him
+            if (Main.config.getBoolean("debug"))
+                this.plugin.getLogger().info("Teleporting player to his previous location");
+            event.setCancelled(true);
+            player.teleport(previousLocation);
         }
     }
-
-    protected Location getPreviousLocation(Player player, World world){
-        Position position = null;
-        try {
-            position = this.plugin.getPositionMapper()
-                    .queryBuilder()
-                    .where()
-                    .eq("uuid", player.getUniqueId().toString())
-                    .and()
-                    .eq("world_name", world.getName())
-                    .queryForFirst();
-        } catch (SQLException e) {
-            return null;
-        }
-        if(position == null) return null;
-        double coordX = position.getCoordinate_x();
-        double coordY = position.getCoordinate_y();
-        double coordZ = position.getCoordinate_z();
-        float yaw = position.getYaw();
-        float pitch = position.getPitch();
-
-        return new Location(world, coordX, coordY, coordZ, yaw, pitch);
-    }
-
 }
