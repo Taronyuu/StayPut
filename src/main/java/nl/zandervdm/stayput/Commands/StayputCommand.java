@@ -24,6 +24,10 @@ public class StayputCommand implements CommandExecutor {
         String executedCommand = strings[0];
 
         if(executedCommand.equals("reload")){
+            if(!commandSender.hasPermission("stayput.admin")){
+                this.sendMessage(commandSender, "You don't have permission to execute this command.");
+                return true;
+            }
             this.plugin.reloadConfig();
             this.plugin.setupConfig();
             this.sendMessage(commandSender, "Config has been reloaded!");

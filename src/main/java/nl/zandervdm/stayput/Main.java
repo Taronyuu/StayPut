@@ -41,6 +41,7 @@ public class Main extends JavaPlugin {
      * Permissions:
      * stayput.use
      * stayput.override
+     * stayput.admin
      */
 
     @Override
