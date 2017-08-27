@@ -41,13 +41,13 @@ public class PlayerTeleportEventListener implements Listener {
 
         Location previousLocation = this.plugin.getRuleManager().shouldTeleportPlayer(player, event.getFrom(), event.getDestination().getLocation(player));
 
-        if(this.isPressureplate(previousLocation)){
-            // Find a valid spot around the location
-            Location newLocation = this.findAvailableLocation(previousLocation);
-            if(newLocation != null) previousLocation = newLocation;
-        }
-
         if(previousLocation != null) {
+            if(this.isPressureplate(previousLocation)){
+                // Find a valid spot around the location
+                Location newLocation = this.findAvailableLocation(previousLocation);
+                if(newLocation != null) previousLocation = newLocation;
+            }
+
             //There is a location, and the player should teleport, so teleport him
             if (Main.config.getBoolean("debug"))
                 this.plugin.getLogger().info("Teleporting player to his previous location");
