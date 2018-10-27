@@ -1,11 +1,12 @@
 name: StayPut
-version: 1.1
+version: 1.2
+api-version: 1.13
 author: Zander van der Meer
-main: nl.zandervdm.stayput.Main
+main: nl.zandervdm.stayput.StayPut
 website: http://zandervdm.nl
 depend: [Multiverse-Core]
 commands:
     stayput:
-        description: Main command
+        description: StayPut command
         usage: /stayput <command>
         aliases: [stay, sp]

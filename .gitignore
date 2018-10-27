@@ -1,0 +1,19 @@
+# Eclipse stuff
+/.classpath
+/.project
+/.settings
+/.checkstyle
+
+# we use maven!
+/build.xml
+
+# maven
+/target
+/classes
+dependency-reduced-pom.xml
+
+# intellij
+*.iml
+*.ipr
+*.iws
+.idea/
