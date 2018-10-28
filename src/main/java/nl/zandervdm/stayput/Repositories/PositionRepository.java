@@ -38,7 +38,8 @@ public class PositionRepository {
         if(position == null) {
             position = new Position();
         }
-        position.setWorld_name(location.getWorld().getName());
+        String world_name = location.getWorld().getName();
+        position.setWorld_name(world_name);
         position.setPlayer_name(player.getName());
         position.setUuid(player.getUniqueId().toString());
         position.setCoordinate_x(location.getX());
@@ -47,7 +48,7 @@ public class PositionRepository {
         position.setYaw(location.getYaw());
         position.setPitch(location.getPitch());
         // Reset dimension last location.
-        clearLastDimension(position.getDimension_name());
+        updateDimension(position.getDimension_name(), world_name);
         position.setDimensionLastLocation(true);
         try {
             this.plugin.getPositionMapper().createOrUpdate(position);
@@ -79,7 +80,12 @@ public class PositionRepository {
         return new Location(world, coordinate_x, coordinate_y, coordinate_z, yaw, pitch);
     }
 
-    private void clearLastDimension(String dimension_name) {
+    private void updateDimension(String dimension_name_passed, String world_name) {
+        // if world is null, quickly check if it has a dimension.
+        String dimension_name = dimension_name_passed;
+        if(world_name == null || world_name.isEmpty()) {
+            dimension_name = this.plugin.getDimensionManager().getDimension(world_name);
+        }
         if(dimension_name != null && !dimension_name.isEmpty()) {
             List<Position> dimension_positions = null;
             try {

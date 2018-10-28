@@ -1,6 +1,9 @@
 package nl.zandervdm.stayput.Utils;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import nl.zandervdm.stayput.StayPut;
 import nl.zandervdm.stayput.Repositories.PositionRepository;
@@ -70,16 +73,13 @@ public class DimensionManager {
          //return false;
     }
 
-    public Location dimensionCheck(Location fromLocation, Location toLocation) {
-        String locationName = toLocation.getWorld().getName();
-        ConfigurationSection dimensions = StayPut.config.getConfigurationSection("dimensions");
-        dimensions.getKeys(false).forEach(key -> {
-            // I don't like mixing plural with singular, too easy to mix up. So we get sub_dimension.
-            List<String> sub_dimension = dimensions.getStringList("dimensions." + key);
-            // Now go to the next dimension if you can't find it or the world doesn't belong to the dimension (sub_dimension).
-            if (sub_dimension == null || !sub_dimension.contains(locationName)) return;
-
-        });
-        return toLocation;
+    public String getDimension(String world_name) {
+        String dimension = null;
+        for (Map.Entry<String,String> entry : this.dimensions.entries()) {
+            if (entry.getValue().equals(world_name)) {
+                dimension = entry.getKey();
+            }
+        }
+        return dimension;
     }
 }
