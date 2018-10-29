@@ -46,8 +46,13 @@ public class RuleManager {
         World toWorld = toLocation.getWorld();
 
         //If this world is inside the configs blacklist, ignore
-        if(this.worldIsBlacklisted(toWorld)){
+        if(this.worldIsBlackListed(toWorld)){
             if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Not StayPut this player because this world is blacklisted");
+            return null;
+        }
+
+        if(!this.worldIsWhiteListed(toWorld)) {
+            if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Not StayPut this player because this world is not whitelisted");
             return null;
         }
 
@@ -63,13 +68,14 @@ public class RuleManager {
         return previousLocation;
     }
 
-    private boolean shouldTeleport(PlayerTeleportEvent.TeleportCause cause){
-        return cause.name().equals(PlayerTeleportEvent.TeleportCause.COMMAND.name())
-                || cause.name().equals(PlayerTeleportEvent.TeleportCause.PLUGIN.name());
-    }
-
-    private boolean worldIsBlacklisted(World world) {
+    private boolean worldIsBlackListed(World world) {
         List<String> blacklistedWorlds = StayPut.config.getStringList("blacklisted-worlds");
         return blacklistedWorlds.size() != 0 && blacklistedWorlds.contains(world.getName());
+    }
+
+    //
+    private boolean worldIsWhiteListed(World world) {
+        List<String> white_listed_worlds = this.plugin.getConfig().getStringList("whitelisted-worlds");
+        return white_listed_worlds.size() == 0 || white_listed_worlds.contains(world.getName());
     }
 }

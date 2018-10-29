@@ -1,6 +1,6 @@
 package nl.zandervdm.stayput.Repositories;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.*;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import nl.zandervdm.stayput.StayPut;
@@ -48,7 +48,7 @@ public class PositionRepository {
         position.setYaw(location.getYaw());
         position.setPitch(location.getPitch());
         // Reset dimension last location.
-        updateDimension(position.getDimension_name(), world_name);
+        position.setDimension_name(updateDimension(position.getDimension_name(), world_name));
         position.setDimensionLastLocation(true);
         try {
             this.plugin.getPositionMapper().createOrUpdate(position);
@@ -57,7 +57,7 @@ public class PositionRepository {
         }
     }
 
-    public Location getPreviousLocationIgnoringDimension(Player player, World world){
+    private Location getPreviousLocationIgnoringDimension(Player player, World world){
         Position position = null;
         try {
             position = this.plugin.getPositionMapper()
@@ -80,10 +80,8 @@ public class PositionRepository {
         return new Location(world, coordinate_x, coordinate_y, coordinate_z, yaw, pitch);
     }
 
-    private void updateDimension(String dimension_name_passed, String world_name) {
-        // if world is null, quickly check if it has a dimension.
-        String dimension_name = dimension_name_passed;
-        if(world_name == null || world_name.isEmpty()) {
+    private String updateDimension(String dimension_name, String world_name) {
+        if(dimension_name == null || dimension_name.isEmpty()) {
             dimension_name = this.plugin.getDimensionManager().getDimension(world_name);
         }
         if(dimension_name != null && !dimension_name.isEmpty()) {
@@ -106,13 +104,14 @@ public class PositionRepository {
                 }
             }
         }
+        return dimension_name;
     }
 
     // Need to check and update all locations to new dimensions as necessary.
-    public void updateDimensionOfPositions(HashMultimap<String,String> dimensions) {
+    public void updateDimensionOfPositions(ImmutableMultimap<String,String> dimensions) {
         if(dimensions != null && !dimensions.isEmpty()) {
             for (String dimension_name : dimensions.keySet()) {
-                Set<String> worlds = dimensions.get(dimension_name);
+                ImmutableCollection<String> worlds = dimensions.get(dimension_name);
                 if (worlds == null || worlds.isEmpty()) {
                     plugin.getLogger().info("Dimension " + dimension_name + " has no worlds. Skipping.");
                 } else {
@@ -170,6 +169,7 @@ public class PositionRepository {
         String world_name = intended_world.getName();
         Position intended_position = null;
         Position actual_position;
+        String dimension_name = null;
         try {
             intended_position = this.plugin.getPositionMapper()
                 .queryBuilder()
@@ -182,23 +182,30 @@ public class PositionRepository {
             e.printStackTrace();
         }
 
+        if(intended_position == null) {
+            dimension_name = this.plugin.getDimensionManager().getDimension(world_name);
+        } else {
+            dimension_name = intended_position.getDimension_name();
+        }
+
         // Stop and just go to the intended location.
         if(intended_position != null && intended_position.getDimensionLastLocation()) {
             if(plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Dimension - intended location is last location.");
             return getPreviousLocationIgnoringDimension(player, intended_world);
+        } else if(dimension_name == null || dimension_name.isEmpty()) {
+            return getPreviousLocationIgnoringDimension(player, intended_world);
         } else {
-            if(intended_position.getDimension_name() == null) return null;
             try {
                 actual_position = this.plugin.getPositionMapper()
                         .queryBuilder()
                         .where()
-                        .eq("dimension_name", intended_position.getDimension_name())
+                        .eq("dimension_name", dimension_name)
                         .and()
                         .eq("dimension_last_location", true)
                         .queryForFirst();
                 World actual_world = this.plugin.getMultiverseCore().getMVWorldManager().getMVWorld(actual_position.getWorld_name()).getCBWorld();
 
-                if(plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Intended to go to " + intended_world.getName() + " going to " + actual_world.getName() + " in dimension " + intended_position.getDimension_name());
+                if(plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Intended to go to " + intended_world.getName() + " going to " + actual_world.getName() + " in dimension " + actual_position.getDimension_name());
                 return new Location(actual_world, actual_position.getCoordinate_x(), actual_position.getCoordinate_y(), actual_position.getCoordinate_z(), actual_position.getYaw(), actual_position.getPitch());
             } catch (SQLException e) {
                 e.printStackTrace();

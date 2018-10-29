@@ -1,9 +1,6 @@
 package nl.zandervdm.stayput.Utils;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.*;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import nl.zandervdm.stayput.StayPut;
 import nl.zandervdm.stayput.Repositories.PositionRepository;
@@ -15,17 +12,17 @@ import java.util.*;
 public class DimensionManager {
 
     private StayPut plugin;
-    private HashMultimap<String,String> dimensions;
+    private ImmutableMultimap<String,String> dimensions;
     private static String SECTION = "dimensions";
 
     public DimensionManager(StayPut plugin) {
         this.plugin = plugin;
-        this.dimensions = HashMultimap.create();
     }
 
     public void loadDimensions() {
         this.ensureConfigIsPrepared();
         this.checkDimensionalDuplication();
+        ImmutableMultimap.Builder<String,String> builder = ImmutableMultimap.builder();
         ConfigurationSection dimensions_section = this.plugin.getConfig().getConfigurationSection(SECTION);
         Set<String> dimension_section_keys = this.plugin.getConfig().getConfigurationSection(SECTION).getKeys(false);
         for(String dimension_key : dimension_section_keys) {
@@ -36,7 +33,7 @@ public class DimensionManager {
                     MultiverseWorld world = this.plugin.getMultiverseCore().getMVWorldManager().getMVWorld(world_name);
                     if (world != null) {
                         if (StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("--- Loading world " + world_name);
-                        this.dimensions.put(dimension_key, world_name);
+                        builder.put(dimension_key, world_name);
                     } else {
                         this.plugin.getLogger().info("    world " + world_name + " could not be found for dimension " + dimension_key);
                     }
@@ -45,10 +42,11 @@ public class DimensionManager {
                 if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Dimension " + dimension_key + " is not a list.");
             }
         }
+        this.dimensions = builder.build();
         if(StayPut.config.getBoolean("debug") && dimension_section_keys.isEmpty()) this.plugin.getLogger().info("Dimensions list is empty.");
     }
 
-    public HashMultimap<String,String> getDimensions() { return this.dimensions; }
+    public ImmutableMultimap<String,String> getDimensions() { return this.dimensions; }
 
     private void ensureConfigIsPrepared() {
         if (this.plugin.getConfig().getConfigurationSection(SECTION) == null) {
@@ -75,11 +73,12 @@ public class DimensionManager {
 
     public String getDimension(String world_name) {
         String dimension = null;
-        for (Map.Entry<String,String> entry : this.dimensions.entries()) {
-            if (entry.getValue().equals(world_name)) {
-                dimension = entry.getKey();
-            }
+        ImmutableList<String> invertedDimensions = this.dimensions.inverse().get(world_name).asList();
+
+        if(invertedDimensions.size() > 0) {
+            dimension = invertedDimensions.get(0);
         }
+
         return dimension;
     }
 }

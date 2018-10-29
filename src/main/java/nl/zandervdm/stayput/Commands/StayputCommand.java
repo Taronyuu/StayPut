@@ -1,6 +1,6 @@
 package nl.zandervdm.stayput.Commands;
 
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.*;
 import nl.zandervdm.stayput.StayPut;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -34,13 +34,16 @@ public class StayputCommand implements CommandExecutor {
             }
             this.plugin.reloadConfig();
             this.plugin.setupConfig();
+            this.plugin.checkTableRebuild();
+            // Re-setup the dimensions if the config got altered.
+            this.plugin.setupDimensions();
             this.sendMessage(commandSender, "Config has been reloaded!");
             return true;
         }
 
         if(executedCommand.equals("listworlds")) {
             this.sendMessage(commandSender, "-- Dimension List --");
-            HashMultimap<String,String> dimensions = this.plugin.getDimensionManager().getDimensions();
+            ImmutableMultimap<String,String> dimensions = this.plugin.getDimensionManager().getDimensions();
             for(String dimension_name : dimensions.keySet() ) {
                 this.sendMessage(commandSender, dimension_name + ":");
                 dimensions.get(dimension_name).forEach(world_name -> {

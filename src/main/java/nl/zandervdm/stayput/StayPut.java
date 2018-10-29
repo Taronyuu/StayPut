@@ -21,6 +21,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
@@ -56,6 +57,7 @@ public class StayPut extends JavaPlugin {
         setupListeners();
         setupCommands();
         setupDatabase();
+        checkTableRebuild();
         setupDao();
         setupTables();
         setupDimensions();
@@ -115,17 +117,13 @@ public class StayPut extends JavaPlugin {
     public void setupConfig(){
         this.configManager.createConfig();
         config = getConfig();
-        if(StayPut.config.getBoolean("debug")) getLogger().info("Setting up config");
-        if(config.getBoolean("rebuild-db")) {
-            rebuildTables();
-            config.set("rebuild-db", "false");
-        }
+        if(config.getBoolean("debug")) getLogger().info("Setting up config");
     }
 
-    private void setupDimensions() {
+    public void setupDimensions() {
         this.dimensionManager.loadDimensions();
         this.positionRepository.updateDimensionOfPositions(this.dimensionManager.getDimensions());
-        if(StayPut.config.getBoolean("debug")) getLogger().info("Setting up dimensions");
+        if(config.getBoolean("debug")) getLogger().info("Setting up dimensions");
     }
 
     private void setupListeners(){
@@ -169,6 +167,12 @@ public class StayPut extends JavaPlugin {
             getLogger().warning("Invalid database connection type chosen!");
         }
         if(StayPut.config.getBoolean("debug")) getLogger().info("Setting up database");
+    }
+
+    public void checkTableRebuild() {
+        if(config.getBoolean("rebuild-db")) {
+            rebuildTables();
+        }
     }
 
     private void setupDao(){

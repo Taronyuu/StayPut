@@ -3,6 +3,7 @@ package nl.zandervdm.stayput.Utils;
 import nl.zandervdm.stayput.StayPut;
 
 import java.io.File;
+import java.io.IOException;
 
 public class ConfigManager {
 
@@ -23,5 +24,4 @@ public class ConfigManager {
             this.plugin.saveDefaultConfig();
         }
     }
-
 }
