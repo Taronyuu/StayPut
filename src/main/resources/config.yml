@@ -2,18 +2,38 @@
 type: sqlite
 # If your database type has been set to mysql fill out these details
 mysql:
-    host: "localhost"
-    port: 3306
-    database: "stay_put"
-    username: "root"
-    password: ""
+  host: "localhost"
+  port: 3306
+  database: "stay_put"
+  username: "root"
+  password: ""
 
 # Blacklisted worlds, which worlds should be excluded from the teleport actions? Default: []
 # Example layout
 # blacklisted-worlds:
-#     - world
-#     - world_nether
+#   - world
+#   - world_nether
 blacklisted-worlds: []
+
+# Whitelisted worlds, will prevent all unlisted worlds from StayPut.
+# leave this list blank to only use the blacklist.
+whitelisted-worlds: []
 
 # Want to debug and see why certain actions are (not) executed? Set this to true. Default: false
 debug: false
+
+# Set this to true to rebuild your db, only necessary when updating from 1.1 to 1.2.
+rebuild-db: false
+
+# Dimensions are a grouping of worlds that are taken into consideration as one when being teleported to.
+# No one world can be in multiple dimensions.
+# Example layout
+# dimensions:
+#   vanilla_dimension:
+#     - world
+#     - world_nether
+#     - world_the_end
+#   adventure_dimension:
+#     - crystal_worlds
+#     - super_hostile_the_kaizo_caverns
+dimensions:
