@@ -3,11 +3,9 @@ package nl.zandervdm.stayput;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
-import com.j256.ormlite.stmt.UpdateBuilder;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 import com.onarandombox.MultiverseCore.MultiverseCore;
-import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import nl.zandervdm.stayput.Commands.StayputCommand;
 import nl.zandervdm.stayput.Listeners.PlayerTeleportEventListener;
 import nl.zandervdm.stayput.Models.Position;
@@ -15,19 +13,23 @@ import nl.zandervdm.stayput.Repositories.PositionRepository;
 import nl.zandervdm.stayput.Utils.ConfigManager;
 import nl.zandervdm.stayput.Utils.DimensionManager;
 import nl.zandervdm.stayput.Utils.RuleManager;
+import org.bukkit.ChatColor;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
 public class StayPut extends JavaPlugin {
 
     public static FileConfiguration config;
+
+    //Multiverse Plugins
+    private MultiverseCore mvPlugin;
 
     //Util classes
     private ConfigManager configManager;
@@ -53,11 +55,12 @@ public class StayPut extends JavaPlugin {
     @Override
     public void onEnable(){
         setupClasses();
+        setupMultiverseCore();
         setupConfig();
         setupListeners();
         setupCommands();
         setupDatabase();
-        checkTableRebuild();
+        checkTableRebuildUpdate();
         setupDao();
         setupTables();
         setupDimensions();
@@ -68,8 +71,9 @@ public class StayPut extends JavaPlugin {
         syncPlayersToDatabase();
     }
 
-    public ConnectionSource getConnectionSource() {
-        return this.connectionSource;
+    public ConsoleCommandSender getConsoleSender() {
+        ConsoleCommandSender console = this.getServer().getConsoleSender();
+        return  console;
     }
 
     public Dao<Position, Integer> getPositionMapper(){
@@ -86,21 +90,7 @@ public class StayPut extends JavaPlugin {
         return this.ruleManager;
     }
 
-    public MultiverseCore getMultiverseCore() {
-        Plugin plugin = getServer().getPluginManager().getPlugin("Multiverse-Core");
-
-        if (plugin instanceof MultiverseCore) {
-            return (MultiverseCore) plugin;
-        }
-
-        // Get the name of all plugins.
-        Plugin[] pluginList =  getServer().getPluginManager().getPlugins();
-        for(Plugin plug : pluginList) {
-            getLogger().info("Plugin: " + plug.getName() );
-        }
-
-        throw new RuntimeException("MultiVerse not found!");
-    }
+    public MultiverseCore getMultiverseCore() { return this.mvPlugin; }
 
     private void setupClasses(){
         this.configManager = new ConfigManager(this);
@@ -109,21 +99,38 @@ public class StayPut extends JavaPlugin {
 
         this.positionRepository = new PositionRepository(this);
 
-        if(getMultiverseCore().getMVWorldManager().getMVWorlds().isEmpty()) {
-            getLogger().info("No worlds found !!!!!!!!! fuck");
+    }
+
+    private void setupMultiverseCore() {
+        Plugin plugin = getServer().getPluginManager().getPlugin("Multiverse-Core");
+
+        if (plugin instanceof MultiverseCore) {
+            this.mvPlugin = (MultiverseCore) plugin;
+            if(this.mvPlugin.getMVWorldManager().getMVWorlds().isEmpty()) {
+                getLogger().info("No worlds found.");
+            }
+        } else {
+
+            // Get the name of all plugins.
+            Plugin[] pluginList = getServer().getPluginManager().getPlugins();
+            for (Plugin plug : pluginList) {
+                getLogger().info("Plugin: " + plug.getName());
+            }
+
+            throw new RuntimeException("MultiVerse not found!");
         }
     }
 
     public void setupConfig(){
         this.configManager.createConfig();
-        config = getConfig();
-        if(config.getBoolean("debug")) getLogger().info("Setting up config");
+        this.config = getConfig();
+        if(this.config.getBoolean("debug")) getLogger().info("Setting up config");
     }
 
     public void setupDimensions() {
         this.dimensionManager.loadDimensions();
         this.positionRepository.updateDimensionOfPositions(this.dimensionManager.getDimensions());
-        if(config.getBoolean("debug")) getLogger().info("Setting up dimensions");
+        if(this.config.getBoolean("debug")) getLogger().info("Setting up dimensions");
     }
 
     private void setupListeners(){
@@ -143,10 +150,10 @@ public class StayPut extends JavaPlugin {
                 e.printStackTrace();
             }
             File file = new File(this.getDataFolder(), "database.db");
-            String data_source = "jdbc:sqlite:" + file;
-            connectionSource = null;
+            String dataSource = "jdbc:sqlite:" + file;
+            this.connectionSource = null;
             try {
-                connectionSource = new JdbcConnectionSource(data_source);
+                this.connectionSource = new JdbcConnectionSource(dataSource);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -156,10 +163,10 @@ public class StayPut extends JavaPlugin {
             String database = StayPut.config.getString("mysql.database");
             String username = StayPut.config.getString("mysql.username");
             String password = StayPut.config.getString("mysql.password");
-            String data_source = "jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true";
-            connectionSource = null;
+            String dataSource = "jdbc:mysql://" + host + ":" + port + "/" + database + "?autoReconnect=true";
+            this.connectionSource = null;
             try {
-                connectionSource = new JdbcConnectionSource(data_source, username, password);
+                this.connectionSource = new JdbcConnectionSource(dataSource, username, password);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -169,16 +176,35 @@ public class StayPut extends JavaPlugin {
         if(StayPut.config.getBoolean("debug")) getLogger().info("Setting up database");
     }
 
-    public void checkTableRebuild() {
+    public void checkTableRebuildUpdate() {
         if(config.getBoolean("rebuild-db")) {
             rebuildTables();
+        } else {
+            try {
+                this.getPositionMapper().executeRawNoArgs("ALTER TABLE 'stayput_position' ADD COLUMN dimension_name STRING;");
+            } catch (SQLException e) {
+                getLogger().info("Didn't add dimension_name");
+                //e.printStackTrace();
+            } catch (NullPointerException e) {
+                getLogger().info("Didn't add dimension_name");
+                //e.printStackTrace();
+            }
+            try {
+                this.getPositionMapper().executeRawNoArgs("ALTER TABLE 'stayput_position' ADD COLUMN dimension_last_location BOOLEAN;");
+            } catch (SQLException e) {
+                getLogger().info("Didn't add dimension_last_location");
+                //e.printStackTrace();
+            } catch (NullPointerException e) {
+                getLogger().info("Didn't add dimension_last_location");
+                //e.printStackTrace();
+            }
         }
     }
 
     private void setupDao(){
         this.positionMapper = null;
         try {
-            this.positionMapper = DaoManager.createDao(connectionSource, Position.class);
+            this.positionMapper = DaoManager.createDao(this.connectionSource, Position.class);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -186,7 +212,7 @@ public class StayPut extends JavaPlugin {
 
     private void setupTables() {
         try {
-            TableUtils.createTableIfNotExists(connectionSource, Position.class);
+            TableUtils.createTableIfNotExists(this.connectionSource, Position.class);
         } catch (SQLException e) {
             e.printStackTrace();
         }

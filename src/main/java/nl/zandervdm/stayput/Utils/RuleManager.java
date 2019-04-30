@@ -75,7 +75,7 @@ public class RuleManager {
 
     //
     private boolean worldIsWhiteListed(World world) {
-        List<String> white_listed_worlds = this.plugin.getConfig().getStringList("whitelisted-worlds");
-        return white_listed_worlds.size() == 0 || white_listed_worlds.contains(world.getName());
+        List<String> whiteListedWorlds = this.plugin.getConfig().getStringList("whitelisted-worlds");
+        return whiteListedWorlds.size() == 0 || whiteListedWorlds.contains(world.getName());
     }
 }

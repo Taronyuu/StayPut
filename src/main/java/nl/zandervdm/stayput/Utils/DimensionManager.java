@@ -23,27 +23,27 @@ public class DimensionManager {
         this.ensureConfigIsPrepared();
         this.checkDimensionalDuplication();
         ImmutableMultimap.Builder<String,String> builder = ImmutableMultimap.builder();
-        ConfigurationSection dimensions_section = this.plugin.getConfig().getConfigurationSection(SECTION);
-        Set<String> dimension_section_keys = this.plugin.getConfig().getConfigurationSection(SECTION).getKeys(false);
-        for(String dimension_key : dimension_section_keys) {
-            if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Loading dimension " + dimension_key + ":");
-            if(dimensions_section.isList(dimension_key)) {
-                List<String> sub_dimension = dimensions_section.getStringList(dimension_key);
-                for (String world_name : sub_dimension) {
-                    MultiverseWorld world = this.plugin.getMultiverseCore().getMVWorldManager().getMVWorld(world_name);
+        ConfigurationSection dimensionsSection = this.plugin.getConfig().getConfigurationSection(SECTION);
+        Set<String> dimensionSectionKeys = this.plugin.getConfig().getConfigurationSection(SECTION).getKeys(false);
+        for(String dimensionKey : dimensionSectionKeys) {
+            if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Loading dimension " + dimensionKey + ":");
+            if(dimensionsSection.isList(dimensionKey)) {
+                List<String> subDimension = dimensionsSection.getStringList(dimensionKey);
+                for (String worldName : subDimension) {
+                    MultiverseWorld world = this.plugin.getMultiverseCore().getMVWorldManager().getMVWorld(worldName);
                     if (world != null) {
-                        if (StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("--- Loading world " + world_name);
-                        builder.put(dimension_key, world_name);
+                        if (StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("--- Loading world " + worldName);
+                        builder.put(dimensionKey, worldName);
                     } else {
-                        this.plugin.getLogger().info("    world " + world_name + " could not be found for dimension " + dimension_key);
+                        this.plugin.getLogger().info("    world " + worldName + " could not be found for dimension " + dimensionKey);
                     }
                 }
             } else {
-                if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Dimension " + dimension_key + " is not a list.");
+                if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("Dimension " + dimensionKey + " is not a list.");
             }
         }
         this.dimensions = builder.build();
-        if(StayPut.config.getBoolean("debug") && dimension_section_keys.isEmpty()) this.plugin.getLogger().info("Dimensions list is empty.");
+        if(StayPut.config.getBoolean("debug") && dimensionSectionKeys.isEmpty()) this.plugin.getLogger().info("Dimensions list is empty.");
     }
 
     public ImmutableMultimap<String,String> getDimensions() { return this.dimensions; }
@@ -71,9 +71,9 @@ public class DimensionManager {
          //return false;
     }
 
-    public String getDimension(String world_name) {
+    public String getDimension(String worldName) {
         String dimension = null;
-        ImmutableList<String> invertedDimensions = this.dimensions.inverse().get(world_name).asList();
+        ImmutableList<String> invertedDimensions = this.dimensions.inverse().get(worldName).asList();
 
         if(invertedDimensions.size() > 0) {
             dimension = invertedDimensions.get(0);

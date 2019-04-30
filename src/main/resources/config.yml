@@ -22,6 +22,11 @@ whitelisted-worlds: []
 # Want to debug and see why certain actions are (not) executed? Set this to true. Default: false
 debug: false
 
+# Expand on what is saved in StayPut.
+unsafe-teleport: false
+track-health: false
+track-momentum: false
+
 # Set this to true to rebuild your db, only necessary when updating from 1.1 to 1.2.
 rebuild-db: false
 

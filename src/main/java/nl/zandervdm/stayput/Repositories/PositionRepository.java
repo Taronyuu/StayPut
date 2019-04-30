@@ -1,8 +1,7 @@
 package nl.zandervdm.stayput.Repositories;
 
 import com.google.common.collect.*;
-import com.onarandombox.MultiverseCore.api.MVWorldManager;
-import com.onarandombox.MultiverseCore.api.MultiverseWorld;
+import com.j256.ormlite.stmt.UpdateBuilder;
 import nl.zandervdm.stayput.StayPut;
 import nl.zandervdm.stayput.Models.Position;
 import org.bukkit.Location;
@@ -15,7 +14,6 @@ import java.util.*;
 public class PositionRepository {
 
     private StayPut plugin;
-    private MVWorldManager worldManager;
 
     public PositionRepository(StayPut plugin) {
         this.plugin = plugin;
@@ -38,17 +36,17 @@ public class PositionRepository {
         if(position == null) {
             position = new Position();
         }
-        String world_name = location.getWorld().getName();
-        position.setWorld_name(world_name);
-        position.setPlayer_name(player.getName());
+        String worldName = location.getWorld().getName();
+        position.setWorldName(worldName);
+        position.setPlayerName(player.getName());
         position.setUuid(player.getUniqueId().toString());
-        position.setCoordinate_x(location.getX());
-        position.setCoordinate_y(location.getY());
-        position.setCoordinate_z(location.getZ());
+        position.setCoordinateX(location.getX());
+        position.setCoordinateY(location.getY());
+        position.setCoordinateZ(location.getZ());
         position.setYaw(location.getYaw());
         position.setPitch(location.getPitch());
         // Reset dimension last location.
-        position.setDimension_name(updateDimension(position.getDimension_name(), world_name));
+        position.setDimensionName(updateDimension(player, position.getDimensionName(), worldName));
         position.setDimensionLastLocation(true);
         try {
             this.plugin.getPositionMapper().createOrUpdate(position);
@@ -71,90 +69,96 @@ public class PositionRepository {
             return null;
         }
         if(position == null) return null;
-        double coordinate_x = position.getCoordinate_x();
-        double coordinate_y = position.getCoordinate_y();
-        double coordinate_z = position.getCoordinate_z();
+        double coordinateX = position.getCoordinateX();
+        double coordinateY = position.getCoordinateY();
+        double coordinateZ = position.getCoordinateZ();
         float yaw = position.getYaw();
         float pitch = position.getPitch();
 
-        return new Location(world, coordinate_x, coordinate_y, coordinate_z, yaw, pitch);
+        return new Location(world, coordinateX, coordinateY, coordinateZ, yaw, pitch);
     }
 
-    private String updateDimension(String dimension_name, String world_name) {
-        if(dimension_name == null || dimension_name.isEmpty()) {
-            dimension_name = this.plugin.getDimensionManager().getDimension(world_name);
+    private String updateDimension(Player player, String dimensionName, String worldName) {
+        if(dimensionName == null || dimensionName.isEmpty()) {
+            dimensionName = this.plugin.getDimensionManager().getDimension(worldName);
         }
-        if(dimension_name != null && !dimension_name.isEmpty()) {
-            List<Position> dimension_positions = null;
+        if(dimensionName != null && !dimensionName.isEmpty()) {
+            List<Position> dimensionPositions = null;
+            UpdateBuilder<Position, Integer> updater = null;
             try {
-                dimension_positions = this.plugin.getPositionMapper()
-                        .queryBuilder()
+                updater = this.plugin.getPositionMapper().updateBuilder();
+                updater.updateColumnValue("dimension_last_location", false)
                         .where()
-                        .eq("dimension_name", dimension_name)
-                        .query();
+                        .eq("dimension_name", dimensionName)
+                        .and()
+                        .eq("uuid", player.getUniqueId().toString());
+                updater.update();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-            for (Position position : dimension_positions) {
-                position.setDimensionLastLocation(false);
-                try {
-                    this.plugin.getPositionMapper().createOrUpdate(position);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }
         }
-        return dimension_name;
+        return dimensionName;
     }
 
     // Need to check and update all locations to new dimensions as necessary.
     public void updateDimensionOfPositions(ImmutableMultimap<String,String> dimensions) {
         if(dimensions != null && !dimensions.isEmpty()) {
-            for (String dimension_name : dimensions.keySet()) {
-                ImmutableCollection<String> worlds = dimensions.get(dimension_name);
+            for (String dimensionName : dimensions.keySet()) {
+                ImmutableCollection<String> worlds = dimensions.get(dimensionName);
                 if (worlds == null || worlds.isEmpty()) {
-                    plugin.getLogger().info("Dimension " + dimension_name + " has no worlds. Skipping.");
+                    plugin.getLogger().info("Dimension " + dimensionName + " has no worlds. Skipping.");
                 } else {
-                    if (plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Updating positions for dimension: " + dimension_name);
-                    List<Position> world_positions = null;
+                    if (plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Updating positions for dimension: " + dimensionName);
+                    List<Position> worldPositions = null;
+                    UpdateBuilder<Position, Integer> updater = null;
                     try {
-                        world_positions = this.plugin.getPositionMapper()
+                        worldPositions = this.plugin.getPositionMapper()
                                 .queryBuilder()
                                 .where().in("world_name", worlds)
                                 .query();
+                        updater = this.plugin.getPositionMapper()
+                                .updateBuilder();
+                        updater.updateColumnValue("dimension_name", dimensionName)
+                                .where()
+                                .in("world_name", worlds);
+                        updater.update();
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
-                    if (plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Found: " + world_positions.size() + " worlds");
-                    for(Position position : world_positions) {
+                    /*
+                    if (plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Found: " + worldPositions.size() + " worlds");
+                    for(Position position : worldPositions) {
+                        position.setDimensionName(dimensionName);
                         try{
                             this.plugin.getPositionMapper().createOrUpdate(position);
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
                     }
+                    */
                 }
-                removeDimensionalOverlap(dimension_name);
+                removeDimensionalOverlap(dimensionName);
             }
         }
     }
 
-    // Occasionally check if an update to dimensions has caused an overlap of last_locations.
-    private void removeDimensionalOverlap(String dimension_name) {
-        List<Position> dimension_last_positions = null;
+    // Occasionally check if an update to dimensions has caused an overlap of lastLocations.
+    // Don't use an updater as we want to only execute if we have more than 2 records.
+    private void removeDimensionalOverlap(String dimensionName) {
+        List<Position> dimensionLastPositions = null;
         try {
-            dimension_last_positions = this.plugin.getPositionMapper()
+            dimensionLastPositions = this.plugin.getPositionMapper()
                 .queryBuilder()
                 .where()
-                .eq("dimension_name", dimension_name)
+                .eq("dimension_name", dimensionName)
                 .and()
                 .eq("dimension_last_location", true)
                 .query();
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        if( dimension_last_positions != null && dimension_last_positions.size() >= 2) {
-            for(Position position : dimension_last_positions) {
+        if( dimensionLastPositions != null && dimensionLastPositions.size() >= 2) {
+            for(Position position : dimensionLastPositions) {
                 position.setDimensionLastLocation(false);
                 try {
                     this.plugin.getPositionMapper().createOrUpdate(position);
@@ -165,48 +169,50 @@ public class PositionRepository {
         }
     }
 
-    public Location getPreviousLocation(Player player, World intended_world) {
-        String world_name = intended_world.getName();
-        Position intended_position = null;
-        Position actual_position;
-        String dimension_name = null;
+    public Location getPreviousLocation(Player player, World intendedWorld) {
+        String worldName = intendedWorld.getName();
+        Position intendedPosition = null;
+        Position actualPosition;
+        String dimensionName = null;
         try {
-            intended_position = this.plugin.getPositionMapper()
+            intendedPosition = this.plugin.getPositionMapper()
                 .queryBuilder()
                 .where()
                 .eq("uuid", player.getUniqueId().toString())
                 .and()
-                .eq("world_name", world_name)
+                .eq("world_name", worldName)
                 .queryForFirst();
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        if(intended_position == null) {
-            dimension_name = this.plugin.getDimensionManager().getDimension(world_name);
+        if(intendedPosition == null) {
+            dimensionName = this.plugin.getDimensionManager().getDimension(worldName);
         } else {
-            dimension_name = intended_position.getDimension_name();
+            dimensionName = intendedPosition.getDimensionName();
         }
 
         // Stop and just go to the intended location.
-        if(intended_position != null && intended_position.getDimensionLastLocation()) {
+        if(intendedPosition != null && intendedPosition.getDimensionLastLocation()) {
             if(plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Dimension - intended location is last location.");
-            return getPreviousLocationIgnoringDimension(player, intended_world);
-        } else if(dimension_name == null || dimension_name.isEmpty()) {
-            return getPreviousLocationIgnoringDimension(player, intended_world);
+            return getPreviousLocationIgnoringDimension(player, intendedWorld);
+        } else if(dimensionName == null || dimensionName.isEmpty()) {
+            return getPreviousLocationIgnoringDimension(player, intendedWorld);
         } else {
             try {
-                actual_position = this.plugin.getPositionMapper()
+                actualPosition = this.plugin.getPositionMapper()
                         .queryBuilder()
                         .where()
-                        .eq("dimension_name", dimension_name)
+                        .eq("dimension_name", dimensionName)
                         .and()
                         .eq("dimension_last_location", true)
                         .queryForFirst();
-                World actual_world = this.plugin.getMultiverseCore().getMVWorldManager().getMVWorld(actual_position.getWorld_name()).getCBWorld();
+                World actualWorld = this.plugin.getMultiverseCore().getMVWorldManager().getMVWorld(actualPosition.getWorldName()).getCBWorld();
 
-                if(plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Intended to go to " + intended_world.getName() + " going to " + actual_world.getName() + " in dimension " + actual_position.getDimension_name());
-                return new Location(actual_world, actual_position.getCoordinate_x(), actual_position.getCoordinate_y(), actual_position.getCoordinate_z(), actual_position.getYaw(), actual_position.getPitch());
+                if(plugin.getConfig().getBoolean("debug") && intendedPosition == null) plugin.getLogger().info("Intended to go to " + intendedWorld.getName());
+                if(plugin.getConfig().getBoolean("debug") && intendedPosition != null) plugin.getLogger().info("Intended to go to " + intendedWorld.getName() + " X: " + intendedPosition.getCoordinateX() + " Y: " + intendedPosition.getCoordinateY() + " Z: " + intendedPosition.getCoordinateZ() + " Dimension: " + intendedPosition.getDimensionName());
+                if(plugin.getConfig().getBoolean("debug")) plugin.getLogger().info("Going to " + actualWorld.getName() + " X: " + actualPosition.getCoordinateX() + " Y: " + actualPosition.getCoordinateY() + " Z: " + actualPosition.getCoordinateZ() + " in dimension " + actualPosition.getDimensionName());
+                return new Location(actualWorld, actualPosition.getCoordinateX(), actualPosition.getCoordinateY(), actualPosition.getCoordinateZ(), actualPosition.getYaw(), actualPosition.getPitch());
             } catch (SQLException e) {
                 e.printStackTrace();
             }

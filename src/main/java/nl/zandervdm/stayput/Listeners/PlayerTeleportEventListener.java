@@ -3,12 +3,15 @@ package nl.zandervdm.stayput.Listeners;
 import com.onarandombox.MultiverseCore.event.MVTeleportEvent;
 import com.onarandombox.MultiversePortals.event.MVPortalEvent;
 import nl.zandervdm.stayput.StayPut;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+
+import java.util.Arrays;
 
 public class PlayerTeleportEventListener implements Listener {
 
@@ -20,7 +23,9 @@ public class PlayerTeleportEventListener implements Listener {
 
     @EventHandler
     public void onPlayerTeleportEvent(MVTeleportEvent event){
-        if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("PlayerTeleportEvent activated");
+        if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info(ChatColor.GREEN + "PlayerTeleportEvent activated");
+        if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info(event.toString());
+        if(StayPut.config.getBoolean("skipTeleportEvent")) return;
         Player player = event.getTeleportee();
 
         if(!this.plugin.getRuleManager().shouldUpdateLocation(player, event.getFrom(), event.getDestination().getLocation(player))){
@@ -50,7 +55,9 @@ public class PlayerTeleportEventListener implements Listener {
 
     @EventHandler
     public void onPlayerPortalEvent(MVPortalEvent event) {
-        if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info("PlayerPortalEvent activated");
+        if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info(ChatColor.GREEN + "PlayerPortalEvent activated");
+        if(StayPut.config.getBoolean("debug")) this.plugin.getLogger().info(event.toString());
+        if(StayPut.config.getBoolean("skipPortalEvent")) return;
         Player player = event.getTeleportee();
 
         if(!this.plugin.getRuleManager().shouldUpdateLocation(player, event.getFrom(), event.getDestination().getLocation(player))){
@@ -80,24 +87,12 @@ public class PlayerTeleportEventListener implements Listener {
 
     private boolean isPressurePlate(Location toLocation) {
         Location blockBelow = new Location(toLocation.getWorld(), toLocation.getX(), toLocation.getY()-1, toLocation.getZ());
-        if(blockBelow.getBlock().getType().equals(Material.ACACIA_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.BIRCH_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.DARK_OAK_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.JUNGLE_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.OAK_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.SPRUCE_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.STONE_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.HEAVY_WEIGHTED_PRESSURE_PLATE)) return true;
-        if(blockBelow.getBlock().getType().equals(Material.LIGHT_WEIGHTED_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.ACACIA_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.BIRCH_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.DARK_OAK_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.JUNGLE_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.OAK_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.SPRUCE_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.STONE_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.HEAVY_WEIGHTED_PRESSURE_PLATE)) return true;
-        if(toLocation.getBlock().getRelative(BlockFace.DOWN).getType().equals(Material.LIGHT_WEIGHTED_PRESSURE_PLATE)) return true;
+        Material[] pressurePlates = {Material.ACACIA_PRESSURE_PLATE, Material.BIRCH_PRESSURE_PLATE, Material.DARK_OAK_PRESSURE_PLATE, Material.JUNGLE_PRESSURE_PLATE,
+            Material.OAK_PRESSURE_PLATE, Material.SPRUCE_PRESSURE_PLATE, Material.STONE_PRESSURE_PLATE, Material.HEAVY_WEIGHTED_PRESSURE_PLATE, Material.LIGHT_WEIGHTED_PRESSURE_PLATE};
+
+        if(Arrays.stream(pressurePlates).anyMatch(x -> x.equals(blockBelow.getBlock().getType()))) return true;
+        if(Arrays.stream(pressurePlates).anyMatch(x -> x.equals(toLocation.getBlock().getRelative(BlockFace.DOWN).getType()))) return true;
+
         return false;
     }
 
