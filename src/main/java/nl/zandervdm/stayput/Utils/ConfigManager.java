@@ -1,14 +1,15 @@
 package nl.zandervdm.stayput.Utils;
 
-import nl.zandervdm.stayput.Main;
+import nl.zandervdm.stayput.StayPut;
 
 import java.io.File;
+import java.io.IOException;
 
 public class ConfigManager {
 
-    protected Main plugin;
+    private StayPut plugin;
 
-    public ConfigManager(Main plugin) {
+    public ConfigManager(StayPut plugin) {
         this.plugin = plugin;
     }
 
@@ -23,5 +24,4 @@ public class ConfigManager {
             this.plugin.saveDefaultConfig();
         }
     }
-
 }

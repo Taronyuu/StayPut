@@ -7,31 +7,37 @@ import com.j256.ormlite.table.DatabaseTable;
 public class Position {
 
     @DatabaseField(generatedId = true)
-    protected Integer id;
+    private Integer id;
 
     @DatabaseField()
-    protected String uuid;
+    private String uuid;
 
     @DatabaseField()
-    protected String player_name;
+    private String player_name;
 
     @DatabaseField()
-    protected String world_name;
+    private String world_name;
 
     @DatabaseField()
-    protected Double coordinate_x;
+    private Double coordinate_x;
 
     @DatabaseField()
-    protected Double coordinate_y;
+    private Double coordinate_y;
 
     @DatabaseField()
-    protected Double coordinate_z;
+    private Double coordinate_z;
 
     @DatabaseField()
-    protected Float yaw;
+    private Float yaw;
 
     @DatabaseField()
-    protected Float pitch;
+    private Float pitch;
+
+    @DatabaseField
+    private String dimension_name;
+
+    @DatabaseField
+    private boolean dimension_last_location;
 
     public Float getPitch() {
         return pitch;
@@ -57,51 +63,55 @@ public class Position {
         this.uuid = uuid;
     }
 
-    public String getPlayer_name() {
+    public String getPlayerName() {
         return player_name;
     }
 
-    public void setPlayer_name(String player_name) {
-        this.player_name = player_name;
+    public void setPlayerName(String playerName) {
+        this.player_name = playerName;
     }
 
-    public String getWorld_name() {
+    public String getWorldName() {
         return world_name;
     }
 
-    public void setWorld_name(String world_name) {
-        this.world_name = world_name;
+    public void setWorldName(String worldName) {
+        this.world_name = worldName;
     }
 
-    public Double getCoordinate_x() {
+    public Double getCoordinateX() {
         return coordinate_x;
     }
 
-    public void setCoordinate_x(Double coordinate_x) {
-        this.coordinate_x = coordinate_x;
-    }
+    public void setCoordinateX(Double coordinateX) {  this.coordinate_x = coordinateX; }
 
-    public Double getCoordinate_y() {
+    public Double getCoordinateY() {
         return coordinate_y;
     }
 
-    public void setCoordinate_y(Double coordinate_y) {
-        this.coordinate_y = coordinate_y;
+    public void setCoordinateY(Double coordinateY) {
+        this.coordinate_y = coordinateY;
     }
 
-    public Double getCoordinate_z() {
+    public Double getCoordinateZ() {
         return coordinate_z;
     }
 
-    public void setCoordinate_z(Double coordinate_z) {
-        this.coordinate_z = coordinate_z;
+    public void setCoordinateZ(Double coordinateZ) {
+        this.coordinate_z = coordinateZ;
     }
 
-    public Float getYaw() {
-        return yaw;
-    }
+    public Float getYaw() { return yaw; }
 
     public void setYaw(Float yaw) {
         this.yaw = yaw;
     }
+
+    public String getDimensionName() { return dimension_name; }
+
+    public void setDimensionName(String dimensionName) { this.dimension_name = dimensionName; }
+
+    public boolean getDimensionLastLocation() { return dimension_last_location; }
+
+    public void setDimensionLastLocation(Boolean dimension_last_location) { this.dimension_last_location = dimension_last_location; }
 }
